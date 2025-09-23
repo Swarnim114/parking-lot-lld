@@ -1,108 +1,131 @@
 @startuml
-
-title Parking Lot Class Diagram 
+title Parking Lot Class Diagram - MVP
 
 class ParkingLot {
-    - String name 
-    - String address
-    - List<ParkingFloor> floors
-    - List<EntryGate> entries
-    - List<ExitGate> exits
-    +boolean isFull()
-    +ParkingSlot getNearestAvailableSlot(Vehicle vehicle)
-}
-
-class ParkingFloor {
-    - int floorNumber
-    - List<ParkingSlot> slots
-    +boolean isFull()
-}
-
-abstract class ParkingSlot {
-    - int slotId
-    - boolean isAvailable
-    - SlotType slotType
-    +assignVehicle(Vehicle v)
-    +removeVehicle()
-}
-
-class EVSlot extends ParkingSlot {
-    - PowerPlug powerPlug
-}
-
-enum SlotType {
-    -CAR
-    -BIKE
-    -TRUCK
-    -EV
-}
-
-class PowerPlug {
-    - int plugId
-    - boolean isAvailable
-}
-
-class Vehicle {
-    - String licenseNumber
-    - VehicleType type
-}
-
-enum VehicleType {
-    -CAR
-    -BIKE
-    -TRUCK
-    -EV
+    - string name 
+    - string address 
+    - List<ParkingSpot> parkingSpots
+    - List<Gate> entryGates
+    - List<Gate> exitGates  
+    - PricingStrategy pricingStrategy
+    + boolean isParkingAvailable(VehicleType type)
+    + ParkingSpot assignParkingSpot(Vehicle vehicle)
+    + double calculateFee(Ticket ticket)
 }
 
 abstract class Gate {
-    - int gateID 
-    - Attendant attendant
-    - GateType gateType
+    - int gateNo 
+    - Guard guard 
 }
 
-enum GateType {
-    -ENTRY 
-    -EXIT
+class EntryGate {
+    + Ticket generateTicket(Vehicle vehicle)
 }
 
-class EntryGate extends Gate {
-    +Ticket issueTicket(Vehicle v)
+class ExitGate {
+    + Payment processPayment(Ticket ticket)
 }
 
-class ExitGate extends Gate {
-    +processTicket(Ticket t)
+class Guard {
+    - string name
+    - int age 
+    + Ticket generateTicket(Vehicle vehicle)
+}
+
+enum VehicleType {
+    BIKE
+    CAR
+    TRUCK
+}
+
+class Vehicle {
+    - string licenseNumber
+    - VehicleType type
+    - boolean isEV
 }
 
 class Ticket {
-    - int ticketId
+    - string ticketId
     - Date entryTime
     - Date exitTime
-    - ParkingSlot slot
     - Vehicle vehicle
-    +calculateFee()
+    - ParkingSpot parkingSpot
+    - Gate entryGate
+    + double calculateDuration()
 }
 
-class Attendant {
-    - int id
-    - String name
-    +collectPayment(Ticket t)
+abstract class ParkingSpot {
+    - string spotId
+    - VehicleType spotType
+    - boolean isAvailable
+    - boolean hasCharging
+    - double baseRate
+    - int floorNumber
+    + boolean canParkVehicle(Vehicle vehicle)
+    + double calculateAdditionalCharges()
 }
 
-ParkingLot "1" *-- "*" ParkingFloor
-ParkingFloor "1" *-- "*" ParkingSlot
-ParkingSlot ..> SlotType
-EVSlot *-- PowerPlug
-Vehicle ..> VehicleType
-ParkingSlot --> Vehicle
-Gate ..> GateType
-EntryGate --> Ticket
-ExitGate --> Ticket
-Gate --> Attendant
-ParkingLot "1" *-- "*" EntryGate
-ParkingLot "1" *-- "*" ExitGate
-Ticket --> ParkingSlot
-Ticket --> Vehicle
-Attendant --> Ticket
+class BikeSpot {
+    - boolean isElectricCharging
+}
 
+class CarSpot {
+    - boolean isElectricCharging
+}
+
+class TruckSpot {
+    - boolean isElectricCharging
+}
+
+interface PricingStrategy {
+    + double calculateCharges(Ticket ticket)
+}
+
+class HourlyPricingStrategy {
+    - double hourlyRate
+    - double evChargingFee
+    + double calculateCharges(Ticket ticket)
+}
+
+class Payment {
+    - string paymentId
+    - double amount
+    - Date paymentTime
+    - PaymentStatus status
+    + boolean processPayment()
+}
+
+enum PaymentStatus {
+    PENDING
+    COMPLETED
+    FAILED
+}
+
+' Relationships
+ParkingLot "1" *-- "*" ParkingSpot : manages
+ParkingLot "1" *-- "*" Gate : has
+ParkingLot "1" *-- "1" PricingStrategy : uses
+
+Gate "1" o-- "1" Guard : assigned to
+EntryGate --|> Gate
+ExitGate --|> Gate
+
+ParkingSpot <|-- BikeSpot
+ParkingSpot <|-- CarSpot
+ParkingSpot <|-- TruckSpot
+
+Ticket "1" *-- "1" Vehicle : for
+Ticket "1" *-- "1" ParkingSpot : assigned to
+Ticket "1" *-- "1" EntryGate : issued at
+
+Vehicle "1" *-- "1" VehicleType : categorized as
+
+PricingStrategy <|.. HourlyPricingStrategy : implements
+
+ExitGate "1" *-- "*" Payment : processes
+Payment "1" *-- "1" PaymentStatus : has
+
+EntryGate "1" *-- "*" Ticket : generates
+Guard "1" *-- "*" Ticket : issues
 
 @enduml
