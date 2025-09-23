@@ -1,0 +1,108 @@
+@startuml
+
+title Parking Lot Class Diagram 
+
+class ParkingLot {
+    - String name 
+    - String address
+    - List<ParkingFloor> floors
+    - List<EntryGate> entries
+    - List<ExitGate> exits
+    +boolean isFull()
+    +ParkingSlot getNearestAvailableSlot(Vehicle vehicle)
+}
+
+class ParkingFloor {
+    - int floorNumber
+    - List<ParkingSlot> slots
+    +boolean isFull()
+}
+
+abstract class ParkingSlot {
+    - int slotId
+    - boolean isAvailable
+    - SlotType slotType
+    +assignVehicle(Vehicle v)
+    +removeVehicle()
+}
+
+class EVSlot extends ParkingSlot {
+    - PowerPlug powerPlug
+}
+
+enum SlotType {
+    -CAR
+    -BIKE
+    -TRUCK
+    -EV
+}
+
+class PowerPlug {
+    - int plugId
+    - boolean isAvailable
+}
+
+class Vehicle {
+    - String licenseNumber
+    - VehicleType type
+}
+
+enum VehicleType {
+    -CAR
+    -BIKE
+    -TRUCK
+    -EV
+}
+
+abstract class Gate {
+    - int gateID 
+    - Attendant attendant
+    - GateType gateType
+}
+
+enum GateType {
+    -ENTRY 
+    -EXIT
+}
+
+class EntryGate extends Gate {
+    +Ticket issueTicket(Vehicle v)
+}
+
+class ExitGate extends Gate {
+    +processTicket(Ticket t)
+}
+
+class Ticket {
+    - int ticketId
+    - Date entryTime
+    - Date exitTime
+    - ParkingSlot slot
+    - Vehicle vehicle
+    +calculateFee()
+}
+
+class Attendant {
+    - int id
+    - String name
+    +collectPayment(Ticket t)
+}
+
+ParkingLot "1" *-- "*" ParkingFloor
+ParkingFloor "1" *-- "*" ParkingSlot
+ParkingSlot ..> SlotType
+EVSlot *-- PowerPlug
+Vehicle ..> VehicleType
+ParkingSlot --> Vehicle
+Gate ..> GateType
+EntryGate --> Ticket
+ExitGate --> Ticket
+Gate --> Attendant
+ParkingLot "1" *-- "*" EntryGate
+ParkingLot "1" *-- "*" ExitGate
+Ticket --> ParkingSlot
+Ticket --> Vehicle
+Attendant --> Ticket
+
+
+@enduml

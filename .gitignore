@@ -1,0 +1,16 @@
+*.excalidraw
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.log
+target/
+bin/
+out/
+.gradle/
+build/
+.idea/
+*.swp
+*.swo
+.DS_Store
