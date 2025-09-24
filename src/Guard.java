@@ -1,4 +1,3 @@
-
 public class Guard {
     private String name;
     private int age;
@@ -8,15 +7,29 @@ public class Guard {
         this.age = age;
     }
 
-    public Ticket generateTicket(EntryGate entryGate, Vehicle vehicle) {
-        return entryGate.generateTicket(vehicle);
-    }
-
+    // Getters
     public String getName() {
         return name;
     }
 
     public int getAge() {
         return age;
+    }
+
+    // Setters
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Guard{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
     }
 }

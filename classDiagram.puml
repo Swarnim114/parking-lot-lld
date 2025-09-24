@@ -1,49 +1,44 @@
 @startuml
-title Parking Lot Class Diagram - MVP
+title Parking Lot System - Final Corrected Diagram
+
 
 class ParkingLot {
-    - string name 
-    - string address 
+    - string name
+    - string address
     - List<ParkingSpot> parkingSpots
     - List<Gate> entryGates
-    - List<Gate> exitGates  
+    - List<Gate> exitGates
     - PricingStrategy pricingStrategy
-    + boolean isParkingAvailable(VehicleType type)
-    + ParkingSpot assignParkingSpot(Vehicle vehicle)
+    - SpotAssignmentStrategy spotAssignmentStrategy
+    + Ticket issueNewTicket(Vehicle vehicle, Gate entryGate)
     + double calculateFee(Ticket ticket)
+    + void freeParkingSpot(Ticket ticket)
 }
 
+' Gates are interfaces and depend on the ParkingLot for logic.
 abstract class Gate {
-    - int gateNo 
-    - Guard guard 
+    - int gateId
+    - Guard guard
+}
+class EntryGate extends Gate {
+    + Ticket handleEntry(Vehicle vehicle)
+}
+class ExitGate extends Gate {
+    + Payment processExit(Ticket ticket)
 }
 
-class EntryGate {
-    + Ticket generateTicket(Vehicle vehicle)
-}
-
-class ExitGate {
-    + Payment processPayment(Ticket ticket)
-}
-
+' The Guard is a person who operates the Gate.
 class Guard {
     - string name
-    - int age 
-    + Ticket generateTicket(Vehicle vehicle)
+    - int age
 }
 
-enum VehicleType {
-    BIKE
-    CAR
-    TRUCK
-}
-
+' Vehicle and Ticket are core data models.
 class Vehicle {
     - string licenseNumber
     - VehicleType type
     - boolean isEV
 }
-
 class Ticket {
     - string ticketId
     - Date entryTime
@@ -51,81 +46,74 @@ class Ticket {
     - Vehicle vehicle
     - ParkingSpot parkingSpot
     - Gate entryGate
-    + double calculateDuration()
+    - PaymentStatus paymentStatus
 }
+
 
 abstract class ParkingSpot {
     - string spotId
     - VehicleType spotType
     - boolean isAvailable
     - boolean hasCharging
-    - double baseRate
     - int floorNumber
-    + boolean canParkVehicle(Vehicle vehicle)
-    + double calculateAdditionalCharges()
+    + void occupy()
+    + void vacate()
 }
 
-class BikeSpot {
-    - boolean isElectricCharging
-}
-
-class CarSpot {
-    - boolean isElectricCharging
-}
-
-class TruckSpot {
-    - boolean isElectricCharging
-}
-
-interface PricingStrategy {
-    + double calculateCharges(Ticket ticket)
-}
-
-class HourlyPricingStrategy {
-    - double hourlyRate
-    - double evChargingFee
-    + double calculateCharges(Ticket ticket)
-}
 
 class Payment {
     - string paymentId
     - double amount
     - Date paymentTime
     - PaymentStatus status
-    + boolean processPayment()
+    + boolean process()
 }
-
 enum PaymentStatus {
-    PENDING
-    COMPLETED
-    FAILED
+    PENDING, COMPLETED, FAILED
+}
+enum VehicleType {
+    BIKE, CAR, TRUCK
 }
 
-' Relationships
-ParkingLot "1" *-- "*" ParkingSpot : manages
-ParkingLot "1" *-- "*" Gate : has
-ParkingLot "1" *-- "1" PricingStrategy : uses
+' --- Strategies ---
+interface PricingStrategy {
+    + double calculateCharges(Ticket ticket)
+}
+class HourlyPricingStrategy implements PricingStrategy {
+    + double calculateCharges(Ticket ticket)
+}
+interface SpotAssignmentStrategy {
+    + ParkingSpot findSpot(Vehicle vehicle, List<ParkingSpot> spots)
+}
+class NearestSpotAssignmentStrategy implements SpotAssignmentStrategy {
+    + ParkingSpot findSpot(Vehicle vehicle, List<ParkingSpot> spots)
+}
 
+
+' --- Relationships (Corrected) ---
+
+' CORRECTED: ParkingLot HAS parts, but doesn't OWN their existence -> Aggregation (o--)
+ParkingLot "1" o-- "*" ParkingSpot : has
+ParkingLot "1" o-- "*" Gate : has
+
+' CORRECTED: ParkingLot USES strategies -> Association (-->)
+ParkingLot "1" --> "1" PricingStrategy : uses
+ParkingLot "1" --> "1" SpotAssignmentStrategy : uses
+
+' A Gate has a Guard assigned to it.
 Gate "1" o-- "1" Guard : assigned to
-EntryGate --|> Gate
-ExitGate --|> Gate
 
-ParkingSpot <|-- BikeSpot
-ParkingSpot <|-- CarSpot
-ParkingSpot <|-- TruckSpot
+' CORRECTED: Ticket is associated with independent objects -> Association (-->)
+Ticket "1" --> "1" Vehicle : for
+Ticket "1" --> "1" ParkingSpot : assigned to
+Ticket "1" --> "1" Gate : issued at
 
-Ticket "1" *-- "1" Vehicle : for
-Ticket "1" *-- "1" ParkingSpot : assigned to
-Ticket "1" *-- "1" EntryGate : issued at
+' CORRECTED: Gates DEPEND on ParkingLot for core logic -> Dependency (..>)
+EntryGate ..> ParkingLot : requests ticket & spot
+ExitGate ..> ParkingLot : requests fee calculation & spot release
 
-Vehicle "1" *-- "1" VehicleType : categorized as
-
-PricingStrategy <|.. HourlyPricingStrategy : implements
-
-ExitGate "1" *-- "*" Payment : processes
-Payment "1" *-- "1" PaymentStatus : has
-
-EntryGate "1" *-- "*" Ticket : generates
-Guard "1" *-- "*" Ticket : issues
+' CORRECTED: Gates CREATE Tickets/Payments, they don't own them -> Dependency (..>)
+EntryGate ..> Ticket : creates
+ExitGate ..> Payment : initiates
 
 @enduml
